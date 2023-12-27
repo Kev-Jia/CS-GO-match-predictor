@@ -24,7 +24,7 @@ sed -i "s/,,/,/g" $OUTPUT
 
 # re-add [ at start of file and ] at end of file
 # MANUAL INTERVENTION REQUIRED
-# unnecessary newlines at start and end of file need to be trimmed manually
+# unnecessary newlines at start and end of file should be trimmed manually
 sed -i "1 i\[" $OUTPUT
 echo "" >> $OUTPUT
 echo "]" >> $OUTPUT

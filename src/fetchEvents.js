@@ -49,39 +49,9 @@ for(let i in events2022)
     eventIDs.push(events2022[i][0]);
 }
 
-// process.argv.forEach((value, index) => {console.log(index, value); });
-
-//[6343, 6219, 6136, 6137, 6384, 6372, 6138, 6345, 6510, 6503, 6140, 6346, 6141, 6588, 6586, 6348, 6349]
-//let eventIDs2023 = [6970, 6810, 6809, 6862, 6864, 6794, 6793, 6861, 6972, 6973, 6812, 6811, 7128]
-
-
-
-/* HLTV.getEventByName({name:"PGL Antwerp Major 2022 Challengers Stage"}).then((res) => {
-    console.log(res)
-}) */
-
-/* HLTV.getEvent({id: 6140}).then(res => {
-    console.log(res)
-}) */
-
-// clear file before writing data
-
-// write data
-// newline for each event
-/* for(let i in eventIDs)
-{
-    console.log(eventIDs[i])
-    HLTV.getResults({eventIds: eventIDs[i], bestOfX: BestOfFilter.BO3, delayBetweenPageRequests: 15000}).then(res => {
-        fs.appendFile("eventData.txt", JSON.stringify(res), (err) => {if (err) throw err})
-    });
-    console.log("success") 
-} */
-
+// output all matchIDs for each event
+// bestOfFilter does not seem to function
+// that can be dealt with later in Python however
 HLTV.getResults({eventIds: process.argv[2], bestOfX: [BestOfFilter.BO3], delayBetweenPageRequests: 15000}).then(res => {
     console.log(res)
-    // fs.appendFile("eventData.txt", JSON.stringify(res), (err) => {if (err) throw err})
 });
-
-
-// write EOL character
-// fs.appendFile("eventData.txt", "\n", (err) => {if (err) throw err})
