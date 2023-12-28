@@ -3,13 +3,16 @@ import pandas
 import numpy as np
 import math
 import requests
+import urllib.request as url
+from bs4 import BeautifulSoup
 from demoparser import DemoParser
 from random import sample as sample
+from random import randint as rand
+from time import sleep as sleep
 
+# define FlareSolverr variables for bypassing Cloudflare
 FlareSolverrURL = "http://localhost:8191/v1"
 FlareSolverrHeaders = {"Content-Type": "application/json"}
-
-params = {"cmd": "request.get", "url": "https://www.hltv.org/matches/2353993/*", "maxTimeout": 60000}
 
 # open events.json for parsing
 with open("events.json", "r") as events:
@@ -20,7 +23,6 @@ n = 80
 
 matchIDs = []
 matchIDsToFetch = []
-matchURLsToFetch = []
 results = []
 totalMaps = 0
 
@@ -43,16 +45,28 @@ print(totalMaps)
 # IEM Katowice 2022 grand final has multiple overtimes, 3:0 Bo5 comes out to 716 MB
 # IEM Cologne 2022 grand final has fewer overtimes, 3:2 Bo5 comes out to 980 MB
 # 750 MB per match is a good rough upper estimate of mean match file size
-print(totalMaps / len(data))
-print(math.ceil(n * (totalMaps / len(data))))
-print(math.ceil(n * (totalMaps / len(data))) * 0.75)
-print((math.ceil(n * (totalMaps / len(data))) * 0.75) / 0.01 / 60 / 60)
+print("mean maps per match: ", "{:,.3f}".(totalMaps / len(data)))
+print("total maps to download: ", math.ceil(n * (totalMaps / len(data))))
+print("total GB to download: ", (math.ceil(n * (totalMaps / len(data))) * 0.75))
+print("download time: ", math.floor(math.ceil(n * (totalMaps / len(data))) * 0.75 / 0.01 / 60 / 60))
 
 matchIDsToFetch = sample(matchIDs, n)
 
+matchURL = ""
+params = []
+downloadURLs = []
+
 for i in range(n):
-    matchURLsToFetch.append("https://www.hltv.org/matches/" + str(matchIDsToFetch) + "/*")
+    matchURL = "https://www.hltv.org/matches/" + str(matchIDsToFetch[i]) + "/*"
+    params.append({"cmd": "request.get", "url": matchURL, "maxTimeout": 60000})
+    response = requests.post(FlareSolverrURL, headers = FlareSolverrHeaders, json = params[i])
 
+    html = BeautifulSoup(response.content, "html.parser")
+    htmlLinks = html.find_all("a")
 
-response = requests.post(FlareSolverrURL, headers = FlareSolverrHeaders, json = params)
-print(str(response.content))
+    for j in htmlLinks:
+        if "data-demo-link" in str(j):
+            print(str(j)[44:64])
+            downloadURLs.append("https://www.hltv.org" + str(j)[44:64])
+
+    sleep(rand(20, 30))
