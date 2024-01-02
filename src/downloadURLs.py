@@ -15,7 +15,7 @@ FlareSolverrURL = "http://localhost:8191/v1"
 FlareSolverrHeaders = {"Content-Type": "application/json"}
 
 # open events.json for parsing
-with open("events.json", "r") as events:
+with open("matches.json", "r") as events:
     data = json.load(events)
 
 # number of matches to download

@@ -1,6 +1,6 @@
 #!/bin/sh
 
-OUTPUT="events.json"
+OUTPUT="matches.json"
 attributes=("id:" "stars:" "date:" "team1:" "name:" "logo:" "team2:" "result:" "format:" "map:")
 
 # fix JSON attributes
