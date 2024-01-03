@@ -2,6 +2,7 @@ import json
 import pandas
 import numpy as np
 import math
+import sys
 import requests
 import urllib.request as url
 from bs4 import BeautifulSoup
@@ -9,6 +10,10 @@ from demoparser import DemoParser
 from random import sample as sample
 from random import randint as rand
 from time import sleep as sleep
+from time import time as timeNow
+
+# program start time
+start = timeNow()
 
 # define FlareSolverr variables for bypassing Cloudflare
 FlareSolverrURL = "http://localhost:8191/v1"
@@ -34,7 +39,10 @@ for i in range(len(data)):
     if data[i]["format"] == "bo3":
         results.append([data[i]["result"]["team1"], data[i]["result"]["team2"]])
 
-# total maps across 2022 Liquipedia S-tier tournaments
+# total Bo3's across 2022 Liquipedia S-tier tournaments
+print("total Bo3's 2022:", len(results))
+
+# total maps across 2022 Liquipedia S-tier tournaments Bo3 matches
 totalMaps = sum(np.array(results).sum(1))
 print("total maps for all Bo3's 2022:", totalMaps)
 
@@ -49,7 +57,7 @@ print("download (compressed):", (math.ceil(n * (totalMaps / len(data))) * 0.5), 
 print("download (uncompressed)/dataset size:", 2 * (math.ceil(n * (totalMaps / len(data))) * 0.5), "GiB")
 
 time = (math.ceil(n * (totalMaps / len(data))) * 0.5 / 0.01 / 60 / 60)
-print("download time:", int(math.modf(time)[1]), "h,", math.ceil(math.modf(time)[0] * 60), "min\n")
+print("download time:", int(math.modf(time)[1]), "h", math.ceil(math.modf(time)[0] * 60), "min\n")
 
 matchIDsToFetch = sample(matchIDs, n)
 
@@ -67,28 +75,32 @@ for i in range(n):
     response = requests.post(FlareSolverrURL, headers = FlareSolverrHeaders, json = params[i])
 
     # parsing HTML
-    # searching HTML for all <a></a> tags
+    # searching HTML for all <a> tags
     html = BeautifulSoup(response.content, "html.parser")
     htmlLinks = html.find_all("a")
 
-    # search all found <a></a> tags for download IDs
+    # search all found <a> tags for download IDs
     # form download URLs from download IDs
     for j in htmlLinks:
         if "data-demo-link" in str(j):
-            print(str(i + 1) + "/" + str(n) + ",", str(j)[44:64] + ",", matchURLToFetch)
+            minsElapsed = str(int((timeNow() - start) // 60))
+            secsElapsed = str("{:.1f}".format(timeNow() - start - (float(minsElapsed) * 60)))
+            details = str(str(i + 1) + "/" + str(n) + ", " + str(j)[44:64] + ", " + matchURLToFetch + ", " + minsElapsed + " min " + secsElapsed + " s ")
+            sys.stdout.write(str("\r [ %d" % i + "% ] ") + details)
             downloadURLs.append("https://www.hltv.org" + str(j)[44:64])
 
     # random delay to avoid bot detection
     sleep(rand(20, 30))
+    sys.stdout.flush()
 
 # dictionary matching match IDs to download URLs
 downloadURLsJson = {matchIDsToFetch[i]:downloadURLs[i] for i in range(n)}
 
 # save this dictionary to downloadURLs.json
 with open("downloadURLs.json", "w") as download:
-    json.dump(downloadURLsJson, download)
+    json.dump(downloadURLsJson, download, indent = 2)
 
-
+print("\n")
 
 
 
