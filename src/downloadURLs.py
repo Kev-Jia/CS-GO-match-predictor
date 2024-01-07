@@ -85,8 +85,9 @@ for i in range(n):
         if "data-demo-link" in str(j):
             minsElapsed = str(int((timeNow() - start) // 60))
             secsElapsed = str("{:.1f}".format(timeNow() - start - (float(minsElapsed) * 60)))
-            details = str(str(i + 1) + "/" + str(n) + ", " + str(j)[44:64] + ", " + matchURLToFetch + ", " + minsElapsed + " min " + secsElapsed + " s ")
-            sys.stdout.write(str("\r [ %d" % i + "% ] ") + details)
+            timeElapsed = minsElapsed + " min " + secsElapsed + " s"
+            details = str(str(i + 1) + "/" + str(n) + ", " + timeElapsed + ", " + str(j)[44:64] + ", " + matchURLToFetch + "  ")
+            sys.stdout.write(str("\r [ %d" % (i * (100 / n)) + "% ] ") + details)
             downloadURLs.append("https://www.hltv.org" + str(j)[44:64])
 
     # random delay to avoid bot detection
