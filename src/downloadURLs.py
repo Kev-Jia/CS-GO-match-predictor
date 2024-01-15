@@ -5,6 +5,8 @@ import math
 import sys
 import requests
 import urllib.request as url
+
+from pathlib import Path
 from bs4 import BeautifulSoup
 from demoparser import DemoParser
 from random import sample as sample
@@ -19,7 +21,7 @@ start = timeNow()
 FlareSolverrURL = "http://localhost:8191/v1"
 FlareSolverrHeaders = {"Content-Type": "application/json"}
 
-# open events.json for parsing
+# open matches.json for parsing
 with open("matches.json", "r") as events:
     data = json.load(events)
 
