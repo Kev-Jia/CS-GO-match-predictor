@@ -8,6 +8,7 @@ import requests
 import urllib.request as url
 import multiprocessing
 import webbrowser
+import cloudscraper
 
 from pathlib import Path
 from bs4 import BeautifulSoup
@@ -18,7 +19,7 @@ from time import sleep as sleep
 
 threads = 4
 
-webbrowser.open("", new = 0)
+scraper = cloudscraper.create_scraper()
 
 # define FlareSolverr variables for bypassing Cloudflare
 FlareSolverrURL = "http://localhost:8191/v1"
@@ -26,8 +27,6 @@ FlareSolverrHeaders = {"Content-Type": "application/json"}
 
 # match download function
 def download(matchID, downloadURL):
-
-    home = os.path.expanduser("~")
     filePath = "../demos/" + str(matchID)
 
     Path(filePath).mkdir(parents = True, exist_ok = True)
@@ -35,18 +34,18 @@ def download(matchID, downloadURL):
     params = {"cmd": "request.get", "url": downloadURL, "maxTimeout": 60000}
 
     # using FlareSolverr to bypass Cloudflare for hltv.org
-    response = requests.post(FlareSolverrURL, headers = FlareSolverrHeaders, json = params)
-    webbrowser.open(downloadURL, new = 2)
+    # response = requests.post(FlareSolverrURL, headers = FlareSolverrHeaders, json = params, allow_redirects = False)
 
-    os.chdir(home + "/Downloads")
+    # print(response.headers)
 
-    for
+    cloudflareURL = scraper.get(downloadURL).content
 
+    os.chdir(os.getcwd() + "/" + filePath)
     with open(str(matchID) + ".rar", "wb") as archive:
-        archive.write(response.content)
+        archive.write(cloudflareURL)
 
     # random delay to avoid bot detection
-    sleep(rand(20, 30))
+    # sleep(rand(20, 30))
 
 # open matches.json for parsing
 with open("downloadURLs.json", "r") as downloads:
@@ -58,4 +57,4 @@ downloadURLs = list(data.values())
 matches = np.column_stack((matchIDs, downloadURLs))
 
 for i in range(1):
-    download(matches[i][0], matches[i][1])
+    download(matches[i][0], "https://www.hltv.org/matches/2359818/*")

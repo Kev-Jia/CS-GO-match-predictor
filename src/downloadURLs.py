@@ -4,22 +4,53 @@ import numpy as np
 import math
 import sys
 import requests
-import urllib.request as url
+import cloudscraper
 
 from pathlib import Path
 from bs4 import BeautifulSoup
 from demoparser import DemoParser
-from random import sample as sample
+from random import sample
 from random import randint as rand
-from time import sleep as sleep
+from time import sleep
 from time import time as timeNow
 
 # program start time
 start = timeNow()
 
+scraper = cloudscraper.create_scraper()
+
+def fetchDownloadURLs(matchIDsToFetch, ):
+    for i in range(n):
+        # creating match URLs to fetch
+        matchURLToFetch = "https://www.hltv.org/matches/" + str(matchIDsToFetch[i]) + "/*"
+        params.append({"cmd": "request.get", "url": matchURLToFetch, "maxTimeout": 60000})
+
+        # using FlareSolverr to bypass Cloudflare for hltv.org
+        response = requests.post(FlareSolverrURL, headers = FlareSolverrHeaders, json = params[i])
+
+        # parsing HTML
+        # searching HTML for all <a> tags
+        html = BeautifulSoup(response.content, "html.parser")
+        htmlLinks = html.find_all("a")
+
+        # search all found <a> tags for download IDs
+        # form download URLs from download IDs
+        for j in htmlLinks:
+            if "data-demo-link" in str(j):
+                minsElapsed = str(int((timeNow() - start) // 60))
+                secsElapsed = str("{:.1f}".format(timeNow() - start - (float(minsElapsed) * 60)))
+                timeElapsed = minsElapsed + " min " + secsElapsed + " s"
+                details = str(str(i + 1) + "/" + str(n) + ", " + timeElapsed + ", " + str(j)[44:64] + ", " + matchURLToFetch + "  ")
+                sys.stdout.write(str("\r [ %d" % (i * (100 / n)) + "% ] ") + details)
+                downloadURLs.append("https://www.hltv.org" + str(j)[44:64])
+
+        # random delay to avoid bot detection
+        sleep(rand(20, 30))
+        sys.stdout.flush()
+
 # define FlareSolverr variables for bypassing Cloudflare
-FlareSolverrURL = "http://localhost:8191/v1"
-FlareSolverrHeaders = {"Content-Type": "application/json"}
+# FlareSolverrURL = "http://localhost:8191/v1"
+# FlareSolverrHeaders = {"Content-Type": "application/json"}
 
 # open matches.json for parsing
 with open("matches.json", "r") as events:
