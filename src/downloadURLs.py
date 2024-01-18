@@ -4,6 +4,7 @@ import numpy as np
 import math
 import sys
 import requests
+import multiprocessing
 import cloudscraper
 
 from pathlib import Path
@@ -17,40 +18,29 @@ from time import time as timeNow
 # program start time
 start = timeNow()
 
+# set up scraper to bypass Cloudflare
 scraper = cloudscraper.create_scraper()
 
-def fetchDownloadURLs(matchIDsToFetch, ):
-    for i in range(n):
-        # creating match URLs to fetch
-        matchURLToFetch = "https://www.hltv.org/matches/" + str(matchIDsToFetch[i]) + "/*"
-        params.append({"cmd": "request.get", "url": matchURLToFetch, "maxTimeout": 60000})
+def saveMetadata():
 
-        # using FlareSolverr to bypass Cloudflare for hltv.org
-        response = requests.post(FlareSolverrURL, headers = FlareSolverrHeaders, json = params[i])
 
-        # parsing HTML
-        # searching HTML for all <a> tags
-        html = BeautifulSoup(response.content, "html.parser")
-        htmlLinks = html.find_all("a")
+def fetchDownloadURLs(matchID):
+    # creating match URL to fetch
+    matchURL = "https://www.hltv.org/matches/" + str(matchID) + "/*"
 
-        # search all found <a> tags for download IDs
-        # form download URLs from download IDs
-        for j in htmlLinks:
-            if "data-demo-link" in str(j):
-                minsElapsed = str(int((timeNow() - start) // 60))
-                secsElapsed = str("{:.1f}".format(timeNow() - start - (float(minsElapsed) * 60)))
-                timeElapsed = minsElapsed + " min " + secsElapsed + " s"
-                details = str(str(i + 1) + "/" + str(n) + ", " + timeElapsed + ", " + str(j)[44:64] + ", " + matchURLToFetch + "  ")
-                sys.stdout.write(str("\r [ %d" % (i * (100 / n)) + "% ] ") + details)
-                downloadURLs.append("https://www.hltv.org" + str(j)[44:64])
+    # fetch URL contents through scraper
+    response = scraper.get(matchURL).content
 
-        # random delay to avoid bot detection
-        sleep(rand(20, 30))
-        sys.stdout.flush()
+    # parsing HTML
+    # searching HTML for all <a> tags
+    html = BeautifulSoup(response.content, "html.parser")
+    htmlLinks = html.find_all("a")
 
-# define FlareSolverr variables for bypassing Cloudflare
-# FlareSolverrURL = "http://localhost:8191/v1"
-# FlareSolverrHeaders = {"Content-Type": "application/json"}
+    # search all found <a> tags for download IDs
+    # return download URLs
+    for link in htmlLinks:
+        if "data-demo-link" in str(link):
+            return "https://www.hltv.org" + str(link)[44:64]
 
 # open matches.json for parsing
 with open("matches.json", "r") as events:
@@ -64,7 +54,7 @@ matchIDsToFetch = []
 results = []
 totalMaps = 0
 
-# populate lists
+# populate lists with necessary data
 for i in range(len(data)):
     matchIDs.append(data[i]["id"])
 
@@ -80,7 +70,10 @@ totalMaps = sum(np.array(results).sum(1))
 print("total maps for all Bo3's 2022:", totalMaps)
 
 # getting an estimate for data size
-# IEM Katowice 2022 grand final has multiple overtimes, 3:0 Bo5 comes out to ~700 MiB
+# IEM Katowice 2022 grand final has multiple overtimes, 3:0 Bo5
+# this Bo5 can effectively be treated as a rough upper bound for Bo3's length
+
+# compressed it comes out to ~700 MiB
 # uncompressed it comes out to ~1.5 GiB
 # 500 MiB is a good rough estimate for mean compressed match size
 # 1 GiB is a good rough estimate for mean uncompressed match size
@@ -92,7 +85,7 @@ print("download (uncompressed)/dataset size:", 2 * (math.ceil(n * (totalMaps / l
 time = (math.ceil(n * (totalMaps / len(data))) * 0.5 / 0.01 / 60 / 60)
 print("download time:", int(math.modf(time)[1]), "h", math.ceil(math.modf(time)[0] * 60), "min\n")
 
-matchIDsToFetch = sample(matchIDs, n)
+matchIDsToFetch = sample(results, n)
 
 matchURLToFetch = ""
 params = []
@@ -100,28 +93,15 @@ downloadURLs = []
 
 # fetching download URLs for all the match IDs randomly sampled
 for i in range(n):
-    # creating match URLs to fetch
-    matchURLToFetch = "https://www.hltv.org/matches/" + str(matchIDsToFetch[i]) + "/*"
-    params.append({"cmd": "request.get", "url": matchURLToFetch, "maxTimeout": 60000})
+    downloadURL = fetchDownloadURLs(matchIDsToFetch[i])
 
-    # using FlareSolverr to bypass Cloudflare for hltv.org
-    response = requests.post(FlareSolverrURL, headers = FlareSolverrHeaders, json = params[i])
+    minsElapsed = str(int((timeNow() - start) // 60))
+    secsElapsed = str("{:.1f}".format(timeNow() - start - (float(minsElapsed) * 60)))
+    timeElapsed = minsElapsed + " min " + secsElapsed + " s"
 
-    # parsing HTML
-    # searching HTML for all <a> tags
-    html = BeautifulSoup(response.content, "html.parser")
-    htmlLinks = html.find_all("a")
+    details = str(str(i + 1) + "/" + str(n) + ", " + timeElapsed + ", " + str(downloadURL)[44:64] + ", " + matchURLToFetch + "  ")
 
-    # search all found <a> tags for download IDs
-    # form download URLs from download IDs
-    for j in htmlLinks:
-        if "data-demo-link" in str(j):
-            minsElapsed = str(int((timeNow() - start) // 60))
-            secsElapsed = str("{:.1f}".format(timeNow() - start - (float(minsElapsed) * 60)))
-            timeElapsed = minsElapsed + " min " + secsElapsed + " s"
-            details = str(str(i + 1) + "/" + str(n) + ", " + timeElapsed + ", " + str(j)[44:64] + ", " + matchURLToFetch + "  ")
-            sys.stdout.write(str("\r [ %d" % (i * (100 / n)) + "% ] ") + details)
-            downloadURLs.append("https://www.hltv.org" + str(j)[44:64])
+    sys.stdout.write(str("\r [ %d" % (i * (100 / n)) + "% ] ") + details)
 
     # random delay to avoid bot detection
     sleep(rand(20, 30))
