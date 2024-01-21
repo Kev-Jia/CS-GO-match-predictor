@@ -5,47 +5,43 @@ import math
 import sys
 import os
 import requests
-import urllib.request as url
-import multiprocessing
-import webbrowser
 import cloudscraper
 
 from pathlib import Path
 from bs4 import BeautifulSoup
 from demoparser import DemoParser
-from random import sample as sample
+from random import sample
 from random import randint as rand
-from time import sleep as sleep
+from time import sleep
+from time import time as timeNow
 
-threads = 4
+# match directory
+matchPath = os.getcwd() + "/" + "../demos/"
 
+# program start time
+start = timeNow()
+
+# set up scraper to bypass Cloudflare
 scraper = cloudscraper.create_scraper()
 
-# define FlareSolverr variables for bypassing Cloudflare
-FlareSolverrURL = "http://localhost:8191/v1"
-FlareSolverrHeaders = {"Content-Type": "application/json"}
-
 # match download function
-def download(matchID, downloadURL):
-    filePath = "../demos/" + str(matchID)
+def downloadMatch(matchID, downloadURL):
+    # reset current working directory to match directory
+    os.chdir(matchPath)
 
-    Path(filePath).mkdir(parents = True, exist_ok = True)
+    # path for directory to store match archive
+    archivePath = matchPath + str(matchID)
 
-    params = {"cmd": "request.get", "url": downloadURL, "maxTimeout": 60000}
+    # create directory to store match match archive
+    Path(archivePath).mkdir(parents = True, exist_ok = True)
 
-    # using FlareSolverr to bypass Cloudflare for hltv.org
-    # response = requests.post(FlareSolverrURL, headers = FlareSolverrHeaders, json = params, allow_redirects = False)
+    # fetch match archive file from download URL
+    matchArchive = scraper.get(downloadURL).content
 
-    # print(response.headers)
-
-    cloudflareURL = scraper.get(downloadURL).content
-
-    os.chdir(os.getcwd() + "/" + filePath)
-    with open(str(matchID) + ".rar", "wb") as archive:
-        archive.write(cloudflareURL)
-
-    # random delay to avoid bot detection
-    # sleep(rand(20, 30))
+    # save match archive file
+    os.chdir(archivePath)
+    with open(str(matchID) + ".rar", "wb") as match:
+        match.write(matchArchive)
 
 # open matches.json for parsing
 with open("downloadURLs.json", "r") as downloads:
@@ -56,5 +52,24 @@ matchIDs = list(data.keys())
 downloadURLs = list(data.values())
 matches = np.column_stack((matchIDs, downloadURLs))
 
-for i in range(1):
-    download(matches[i][0], "https://www.hltv.org/matches/2359818/*")
+# number of matches
+n = len(matches)
+
+# download matches
+for i in range(n):
+    # stuff for progress indicator
+    minsElapsed = str(int((timeNow() - start) // 60))
+    secsElapsed = str("{:.1f}".format(timeNow() - start - (float(minsElapsed) * 60)))
+    timeElapsed = minsElapsed + " min " + secsElapsed + " s"
+
+    details = str(str(i + 1) + "/" + str(n) + ", " + timeElapsed + ", " + str(matches[i][0]) + "    ")
+
+    sys.stdout.write(str("\r [ %d" % ((i + 1) * (100 / n)) + "% ] ") + details)
+
+    # download match
+    downloadMatch(matches[i][0], matches[i][1])
+
+    # random delay to avoid bot detection
+    sleep(rand(20, 30))
+
+    sys.stdout.flush()

@@ -4,7 +4,6 @@ import numpy as np
 import math
 import sys
 import requests
-import multiprocessing
 import cloudscraper
 
 from pathlib import Path
@@ -21,10 +20,7 @@ start = timeNow()
 # set up scraper to bypass Cloudflare
 scraper = cloudscraper.create_scraper()
 
-def saveMetadata():
-
-
-def fetchDownloadURLs(matchID):
+def fetchDownloadURL(matchID):
     # creating match URL to fetch
     matchURL = "https://www.hltv.org/matches/" + str(matchID) + "/*"
 
@@ -33,14 +29,14 @@ def fetchDownloadURLs(matchID):
 
     # parsing HTML
     # searching HTML for all <a> tags
-    html = BeautifulSoup(response.content, "html.parser")
+    html = BeautifulSoup(response, "html.parser")
     htmlLinks = html.find_all("a")
 
     # search all found <a> tags for download IDs
     # return download URLs
     for link in htmlLinks:
         if "data-demo-link" in str(link):
-            return "https://www.hltv.org" + str(link)[44:64]
+            return ("https://www.hltv.org" + str(link)[38:58])
 
 # open matches.json for parsing
 with open("matches.json", "r") as events:
@@ -49,18 +45,18 @@ with open("matches.json", "r") as events:
 # number of matches to download
 n = 80
 
+# lists to store necessary data
 matchIDs = []
 matchIDsToFetch = []
 results = []
 totalMaps = 0
 
-# populate lists with necessary data
+# populate lists
 for i in range(len(data)):
-    matchIDs.append(data[i]["id"])
-
     # filter for Bo3 matches only
     if data[i]["format"] == "bo3":
         results.append([data[i]["result"]["team1"], data[i]["result"]["team2"]])
+        matchIDs.append(data[i]["id"])
 
 # total Bo3's across 2022 Liquipedia S-tier tournaments
 print("total Bo3's 2022:", len(results))
@@ -75,8 +71,8 @@ print("total maps for all Bo3's 2022:", totalMaps)
 
 # compressed it comes out to ~700 MiB
 # uncompressed it comes out to ~1.5 GiB
-# 500 MiB is a good rough estimate for mean compressed match size
-# 1 GiB is a good rough estimate for mean uncompressed match size
+# 500 MiB is a good rough estimate for upper mean compressed match size
+# 1 GiB is a good rough estimate for upper mean uncompressed match size
 print("mean maps per match:", str("{:.3f}".format(totalMaps / len(data))))
 print("expected total maps to download:", math.ceil(n * (totalMaps / len(data))))
 print("download (compressed):", (math.ceil(n * (totalMaps / len(data))) * 0.5), "GiB")
@@ -85,26 +81,26 @@ print("download (uncompressed)/dataset size:", 2 * (math.ceil(n * (totalMaps / l
 time = (math.ceil(n * (totalMaps / len(data))) * 0.5 / 0.01 / 60 / 60)
 print("download time:", int(math.modf(time)[1]), "h", math.ceil(math.modf(time)[0] * 60), "min\n")
 
-matchIDsToFetch = sample(results, n)
-
-matchURLToFetch = ""
-params = []
+matchIDsToFetch = sample(matchIDs, n)
 downloadURLs = []
 
 # fetching download URLs for all the match IDs randomly sampled
 for i in range(n):
-    downloadURL = fetchDownloadURLs(matchIDsToFetch[i])
-
+    # stuff for progress indicator
     minsElapsed = str(int((timeNow() - start) // 60))
     secsElapsed = str("{:.1f}".format(timeNow() - start - (float(minsElapsed) * 60)))
     timeElapsed = minsElapsed + " min " + secsElapsed + " s"
 
-    details = str(str(i + 1) + "/" + str(n) + ", " + timeElapsed + ", " + str(downloadURL)[44:64] + ", " + matchURLToFetch + "  ")
+    details = str(str(i + 1) + "/" + str(n) + ", " + timeElapsed + ", " + downloadURLs[i] + ", " + str(matchIDsToFetch[i]) + "    ")
 
-    sys.stdout.write(str("\r [ %d" % (i * (100 / n)) + "% ] ") + details)
+    sys.stdout.write(str("\r [ %d" % ((i + 1) * (100 / n)) + "% ] ") + details)
+
+    # add download URL to list
+    downloadURLs.append(fetchDownloadURL(matchIDsToFetch[i]))
 
     # random delay to avoid bot detection
     sleep(rand(20, 30))
+
     sys.stdout.flush()
 
 # dictionary matching match IDs to download URLs
