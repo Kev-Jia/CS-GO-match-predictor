@@ -39,8 +39,8 @@ def fetchDownloadURL(matchID):
             return ("https://www.hltv.org" + str(link)[38:58])
 
 # open matches.json for parsing
-with open("matches.json", "r") as events:
-    data = json.load(events)
+with open("matches.json", "r") as matches:
+    data = json.load(matches)
 
 # number of matches to download
 n = 80
@@ -91,12 +91,12 @@ for i in range(n):
     secsElapsed = str("{:.1f}".format(timeNow() - start - (float(minsElapsed) * 60)))
     timeElapsed = minsElapsed + " min " + secsElapsed + " s"
 
+    # add download URL to list
+    downloadURLs.append(fetchDownloadURL(matchIDsToFetch[i]))
+
     details = str(str(i + 1) + "/" + str(n) + ", " + timeElapsed + ", " + downloadURLs[i] + ", " + str(matchIDsToFetch[i]) + "    ")
 
     sys.stdout.write(str("\r [ %d" % ((i + 1) * (100 / n)) + "% ] ") + details)
-
-    # add download URL to list
-    downloadURLs.append(fetchDownloadURL(matchIDsToFetch[i]))
 
     # random delay to avoid bot detection
     sleep(rand(20, 30))

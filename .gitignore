@@ -1,3 +1,4 @@
 demos/
+datasets/
 .venv/
 activate.sh
