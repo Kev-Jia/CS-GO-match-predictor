@@ -99,7 +99,7 @@ print(df)
 X = np.asarray(df.drop("ctWin", axis = 1)).astype("float32")  # Features
 y = np.asarray(df["ctWin"]).astype("float32")  # Target variable
 
-with open("../demos/test/g2-vs-faze-m1-inferno_PARSED.json") as testData:
+with open("../demos/test/heroic-vs-gamerlegion-m2-inferno_PARSED.json") as testData:
     predX = json.load(testData)
 
 predX_data = []
@@ -195,11 +195,10 @@ accuracy = accuracy_score(y_test, binary_predictions)
 print(f"Test Accuracy with Threshold {threshold}: {accuracy}")
 
 predictions = model.predict(predX_arr)
-print(np.mean(predictions[625:650]))
-print(np.mean(predictions[650:675]))
-print(np.mean(predictions[675:700]))
-print(np.mean(predictions[700:725]))
-print(np.mean(predictions[725:750]))
+print(len(predictions) / 25)
+
+for i in range(int(len(predictions) / 25)):
+    print("round " + str(i + 1) + " CT win chance: " + str(np.mean(predictions[(25 * i):(25 * (i + 1))])))
 
 # model.save("nnModel_tensorflow.h5")
 
