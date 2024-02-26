@@ -225,7 +225,7 @@ if __name__ == "__main__":
     # splitting lists of demo paths and JSON paths into chunks
     # chunkedDemoPaths = [demoPaths[i:i + n] for i in range(0, len(demoPaths), n)]
 
-    output = writeData("../demos/2356167/faze-vs-spirit-m2-dust2.dem")
+    output = writeData("../demos/test/g2-vs-faze-m1-inferno.dem")
     # mp.set_start_method("spawn")
     #
     # with mp.Pool(n) as pool:

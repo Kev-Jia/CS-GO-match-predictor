@@ -6,8 +6,10 @@ import math
 import json
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
+from sklearn.metrics import accuracy_score
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import Dense, Flatten, Conv1D, MaxPooling1D
+from keras.models import save_model, load_model
 import torch
 import torch.nn as nn
 import torch.optim as optim
@@ -44,14 +46,14 @@ for game in data:
         for ct_player in ct_players:
             for t_player in t_players:
                 flat_round = {
-                    "map": game["map"],
+                    # "map": game["map"],
                     # "winner": game["winner"],
                     # "loser": game["loser"],
                     "winnerScore": game["winnerScore"],
                     "loserScore": game["loserScore"],
                     "round": round_data["round"],
                     "ct_tBuyRatio": round_data["ct_tBuyRatio"],
-                    "winningTeam": round_data["winningTeam"],
+                    # "winningTeam": round_data["winningTeam"],
                     "ctWin": round_data["ctWin"],
                     # "ct_team": round_data["ct"]["team"],
                     "ct_startScore": round_data["ct"]["startScore"],
@@ -89,7 +91,7 @@ for i in df.columns:
     if df[i].dtype == int:
         df[i] = df[i].astype(float)
 
-df = pd.get_dummies(df, columns=["map", "winningTeam"])
+# df = pd.get_dummies(df, columns=["map", "winningTeam"])
 
 # Now, df is a flattened representation of the JSON data suitable for use with a CNN
 print(df)
@@ -97,26 +99,109 @@ print(df)
 X = np.asarray(df.drop("ctWin", axis = 1)).astype("float32")  # Features
 y = np.asarray(df["ctWin"]).astype("float32")  # Target variable
 
+with open("../demos/test/g2-vs-faze-m1-inferno_PARSED.json") as testData:
+    predX = json.load(testData)
+
+predX_data = []
+
+for game in predX:
+
+    for round_data in game["rounds"]:
+        ct_players = round_data["ct"]["players"]
+        t_players = round_data["t"]["players"]
+
+        for ct_player in ct_players:
+            for t_player in t_players:
+                flat_round = {
+                    # "map": game["map"],
+                    # "winner": game["winner"],
+                    # "loser": game["loser"],
+                    "winnerScore": game["winnerScore"],
+                    "loserScore": game["loserScore"],
+                    "round": round_data["round"],
+                    "ct_tBuyRatio": round_data["ct_tBuyRatio"],
+                    # "winningTeam": round_data["winningTeam"],
+                    "ctWin": round_data["ctWin"],
+                    # "ct_team": round_data["ct"]["team"],
+                    "ct_startScore": round_data["ct"]["startScore"],
+                    "ct_equipmentValue": round_data["ct"]["equipmentValue"],
+                    "ct_mapControl": round_data["ct"]["mapControl"],
+                    "ct_buy": round_data["ct"]["buy"],
+                    # "ct_player_name": ct_player["name"],
+                    "ct_player_kpr": ct_player["kpr"],
+                    "ct_player_dpr": ct_player["dpr"],
+                    "ct_player_adr": ct_player["adr"],
+                    "ct_player_kast": ct_player["kast"],
+                    "ct_player_rating": ct_player["rating"],
+                    "ct_player_impact": ct_player["impact"],
+                    "ct_player_utility": ct_player["utility"],
+                    # "t_team": round_data["t"]["team"],
+                    "t_startScore": round_data["t"]["startScore"],
+                    "t_equipmentValue": round_data["t"]["equipmentValue"],
+                    "t_mapControl": round_data["t"]["mapControl"],
+                    "t_buy": round_data["t"]["buy"],
+                    # "t_player_name": t_player["name"],
+                    "t_player_kpr": t_player["kpr"],
+                    "t_player_dpr": t_player["dpr"],
+                    "t_player_adr": t_player["adr"],
+                    "t_player_kast": t_player["kast"],
+                    "t_player_rating": t_player["rating"],
+                    "t_player_impact": t_player["impact"],
+                    "t_player_utility": t_player["utility"],
+                }
+                predX_data.append(flat_round)
+
+predX_df = pd.DataFrame(predX_data)
+
+for i in predX_df.columns:
+    if predX_df[i].dtype == int:
+        predX_df[i] = predX_df[i].astype(float)
+
+# predX_df = pd.get_dummies(predX_df, columns=["map", "winningTeam"])
+predX_arr = np.asarray(predX_df.drop("ctWin", axis = 1)).astype("float32")
+
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size = 0.2, random_state = 42)
 
-model = Sequential([
+# model = Sequential([
+#
+#     # ranked in terms of highest accuracy
+#     # 64 filters/layer, filter size 3: 75.5%
+#     # 64 filters/layer, filter size 1: 72.7%
+#     # 64 filters/layer, filter size 5: 55.7%
+#     Conv1D(64, 3, activation = "relu", input_shape = (X_train.shape[1], 1)),
+#     MaxPooling1D(2),
+#     Flatten(),
+#     Dense(64, activation = "relu"),
+#     Dense(1, activation = "sigmoid")  # Binary classification, use "sigmoid" activation
+# ])
+#
+# model.compile(optimizer = "adam", loss = "binary_crossentropy", metrics = ["accuracy"])
+# model.fit(X_train, y_train, epochs = 400, validation_split = 0.2)
 
-    # ranked in terms of highest accuracy
-    # 64 filters/layer, filter size 3: 75.5%
-    # 64 filters/layer, filter size 1: 72.7%
-    # 64 filters/layer, filter size 5: 55.7%
-    Conv1D(64, 1, activation = "relu", input_shape = (X_train.shape[1], 1)),
-    MaxPooling1D(2),
-    Flatten(),
-    Dense(64, activation = "relu"),
-    Dense(1, activation = "sigmoid")  # Binary classification, use "sigmoid" activation
-])
-
-model.compile(optimizer = "adam", loss = "binary_crossentropy", metrics = ["accuracy"])
-model.fit(X_train, y_train, epochs = 4000, validation_split = 0.2)
+model = load_model("nnModel_tensorflow.h5")
 
 test_loss, test_acc = model.evaluate(X_test, y_test)
-print(f"Test Accuracy: {test_acc}")
+print(f"Test Accuracy without Threshold: {test_acc}")
+
+
+predictions = model.predict(X_test)
+
+# Apply threshold of 0.5
+threshold = 0.5
+binary_predictions = (predictions > threshold).astype(int)
+
+# Evaluate the accuracy
+accuracy = accuracy_score(y_test, binary_predictions)
+print(f"Test Accuracy with Threshold {threshold}: {accuracy}")
+
+predictions = model.predict(predX_arr)
+print(np.mean(predictions[625:650]))
+print(np.mean(predictions[650:675]))
+print(np.mean(predictions[675:700]))
+print(np.mean(predictions[700:725]))
+print(np.mean(predictions[725:750]))
+
+# model.save("nnModel_tensorflow.h5")
 
 # df.to_csv("../datasets/trainingDataset.csv")
 
